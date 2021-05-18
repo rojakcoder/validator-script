@@ -1,0 +1,16 @@
+[Unit]
+Description=Terra Oracle Price Server
+After=network.target
+
+[Service]
+Type=simple
+User=terrau
+ExecStart=/home/terrau/oracle-feeder/price-server/price-server-start.sh
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+LimitNOFILE=65535

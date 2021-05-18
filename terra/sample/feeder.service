@@ -1,0 +1,20 @@
+[Unit]
+Description=Terra Oracle Feeder
+After=network.target
+
+[Service]
+Type=simple
+User=terrau
+Environment=CHAIN_ID=tequila-0004
+Environment=ORACLE_PASS=YOUR_PASSWORD_HERE
+Environment=VALIDATOR_KEY=terravaloper12fdlnnc9hsphdrt07hqjzazudc8ztc999h2auz
+ExecStart=/home/terrau/oracle-feeder/feeder/feeder-start.sh
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+LimitNOFILE=65535
+

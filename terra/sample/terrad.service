@@ -1,0 +1,18 @@
+[Unit]
+Description=Terra Daemon
+After=network.target
+
+[Service]
+Type=simple
+User=terrau
+ExecStart=/home/terrau/go/bin/terrad start
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+LimitNOFILE=65537
+
+
