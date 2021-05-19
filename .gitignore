@@ -1,0 +1,16 @@
+target/*
+.settings/*
+.project
+*.swp
+/target
+/public
+node_modules/
+main.css
+main.min.js
+Session.vim
+.commit.md
+dist/
+public/
+themes/
+web-app.min.js
+wppm.zip

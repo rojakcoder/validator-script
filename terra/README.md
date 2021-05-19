@@ -54,26 +54,80 @@ At a high-level, this script downloads and installs the following
 - Oracle Feeder - Price Server 1.10
 - Oracle Feeder - Feeder 1.10
 
-# Post setup
+## Post setup
 
-After the Terra application is installed, the next step is to configure it.
+After the script has completed running and the applications are downloaded, be sure to update the following:
+
+- /home/$USER/oracle-feeder/price-server/config/default.js
+
+# For a new server
+
+For a new server, a snapshot of the blockchain needs to be downloaded for quick sync. The sections below describe the steps for setting up a new node. If running a replacement node, see section "For a replacement server".
 
 ## Download a snapshot
 
 Download the snapshot from https://terra.quicksync.io/
 
-    aria2c -x5 https://get.quicksync.io/columbus-4-pruned.20210515.0310.tar.lz4
+    aria2c -x5 https://get.quicksync.io/{SNAPSHOT_FILE_URL}
 
-# After downloading, verify the integrity of the file by using the checksum.sh file provided.
+After downloading, verify the integrity of the file by using the checksum.sh file provided by the service.
+
+```
 wget {SNAPSHOT_FILE_URL}.checksum
-curl -s https://lcd.terra.dev/txs/`curl -s https://get.quicksync.io/$FILENAME.hash`|jq -r '.tx.value.memo'|sha512sum -c
+curl -s https://lcd.terra.dev/txs/`curl -s https://get.quicksync.io/$FILENAME.hash` | jq -r '.tx.value.memo' | sha512sum -c
 wget https://raw.githubusercontent.com/chainlayer/quicksync-playbooks/master/roles/quicksync/files/checksum.sh
 bash checksum.sh {SNAPSHOT_FILE} check
+```
 
+If the checksum passes, it means the file was downloaded properly. (This process can take several hours.) The next step is to extract it.
+
+    lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus4
+
+This command extracts the files into /mnt/columbus4/data (assuming /mnt/columbus4 is a separate storage disk). This can also take hours to complete.
 
 ## Initialize the node
 
-terrad start
+A new node needs to be initialized with a moniker. E.g.
+
+    terrad init "Validator A"
+
+This will create a ".terrad" directory in the home folder. It comes with a file that needs to be replaced by one from Mainnet.
+
+    mv -i ~/.terrad/config/genesis.json
+    curl {GENESIS_FILE} > ~/.terrad/config/genesis.json
+    curl {ADDRBOOK} > ~/.terrad/config/addrbook.json
+
+For the Mainnet (columbus-4), the genesis file can be downloaded from https://columbus-genesis.s3-ap-northeast-1.amazonaws.com/columbus-4-genesis.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#download-the-genesis-file)).
+
+The address book can be found at https://network.terra.dev/addrbook.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#picking-a-network)).
+
+For the Testnet (tequila-0004), the genesis file can be downloaded from https://raw.githubusercontent.com/terra-project/testnet/master/tequila-0004/genesis.json (reference [github.com](https://github.com/terra-project/testnet)).
+
+The address book can be found at https://network.terra.dev/testnet/addrbook.json
+
+Update the seeds (~/.terrad/config/config.toml) to begin running the blockchain. The seeds for Mainnet are (reference: [docs.terra.money](https://docs.terra.money/node/join-network.html#define-seed-nodes)):
+
+```
+seeds = "87048bf71526fb92d73733ba3ddb79b7a83ca11e@public-seed.terra.dev:26656,b5205baf1d52b6f91afb0da7d7b33dcebc71755f@public-seed2.terra.dev:26656,5fa582d7c9931e5be8c02069d7b7b243c79d25bf@seed.terra.de-light.io:26656"
+```
+
+Update the minimum gas prices to prevent spamming (~/.terrad/config/app.toml).
+
+```
+minimum-gas-prices = "0.01133uluna,0.15uusd,0.104938usdr,169.77ukrw,428.571umnt,0.125ueur,0.98ucny,16.37ujpy,0.11ugbp,10.88uinr,0.19ucad,0.14uchf,0.19uaud,0.2usgd,4.62uthb,1.25usek"
+```
+
+Reference: https://discord.com/channels/566086600560214026/566126728578072586/842861299012468756
+
+Make sure that the data folder points to the actual files by creating a symbolic link to the folder.
+
+    ln -s /mnt/columbus4/data ~/.terrad/data
+
+The daemon can now be started to run through the blocks.
+
+    terrad start
+
+# For a replacement server
 
 ## Configure the client
 
@@ -82,10 +136,5 @@ terracli config node tcp://localhost:26657
 terracli config trust-node true
 
 ## Set the minimum gas prices
-
-// .terrad/config/app.toml
-minimum-gas-prices = "0.01133uluna,0.15uusd,0.104938usdr,169.77ukrw,428.571umnt,0.125ueur,0.98ucny,16.37ujpy,0.11ugbp,10.88uinr,0.19ucad,0.14uchf,0.19uaud,0.2usgd,4.62uthb,1.25usek"
-// https://discord.com/channels/566086600560214026/566126728578072586/842861299012468756
-
 ## Create the validator
 

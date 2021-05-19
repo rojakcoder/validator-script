@@ -27,18 +27,18 @@
 
 ## Update the repos.
 echo "Updating the system"
-echo "-------------------"
+echo "==================="
 sudo apt-get update && sudo apt-get upgrade -y
 
 # Installation of build tools.
 echo "Installing build tools"
-echo "----------------------"
+echo "======================"
 sudo apt-get install -y  build-essential
 sudo apt-get install -y jq
 
 # System configuration
 echo "Configuration"
-echo "-------------"
+echo "============="
 echo -n "Extending limits"
 sudo cp sample/terrad.limit /etc/security/limits.d/terrad.conf
 echo " - done"
@@ -50,11 +50,12 @@ echo "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH" >> ~/.profile
 echo " - done"
 
 echo "Software installation"
-echo "---------------------"
+echo "====================="
 mkdir /home/$USER/downloads
 
 # Installation of Go 
 echo "Installing Go"
+echo "-------------"
 cd /home/$USER/downloads
 curl -o go1.16.3.linux-amd64.tar.gz https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz
 sudo tar -C /usr/local -zxvf go1.16.3.linux-amd64.tar.gz
@@ -63,6 +64,7 @@ echo -n "Installed "
 
 # Installation of terrad
 echo "Installing terrad"
+echo "-----------------"
 mkdir /home/$USER/go
 cd /home/$USER/downloads
 git clone https://github.com/terra-project/core
@@ -74,8 +76,7 @@ terrad version
 
 # Add alias `tc` and `td` for faster typing
 cd /home/$USER/downloads
-echo -n "Updating aliases"
-echo -e "alias td='terrad'\nalias tc='terracli'" > .bash_aliases
+echo -n "Adding autocompletion for terrad & terracli commands"
 # Add autocompletion.
 terrad completion > terrad_completion
 terracli completion > terracli_completion
@@ -85,7 +86,8 @@ source ~/.profile
 echo " - done"
 
 # Install the Price Server
-echo -n "Downloading Node.js..."
+echo "Downloading Node.js"
+echo "-------------------"
 cd /home/$USER/downloads
 wget https://nodejs.org/dist/v14.16.1/node-v14.16.1-linux-x64.tar.xz
 tar -xvf node-v14.16.1-linux-x64.tar.xz
@@ -108,13 +110,16 @@ cd ..
 rmdir node-v14.16.1-linux-x64
 
 # Install the Oracle Feeder and Price Server
-echo "Downloading Oracle Feeder."
+echo "Downloading Oracle Feeder"
+echo "-------------------------"
 cd /home/$USER
 git clone https://github.com/terra-project/oracle-feeder.git
-echo "Installing Feeder."
+
+echo "- Installing Feeder."
 cd /home/$USER/oracle-feeder/feeder
 /usr/local/bin/npm install
-echo "Installing Price Server."
+
+echo "- Installing Price Server."
 cd /home/$USER/oracle-feeder/price-server
 /usr/local/bin/npm install
 echo "Making a default configuration file. REMEMBER TO CHANGE config/default.js"
