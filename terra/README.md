@@ -127,14 +127,56 @@ The daemon can now be started to run through the blocks.
 
     terrad start
 
-# For a replacement server
+# Client
+
+## Create the keys
+
+This usually just needs to be done the first time the validator is being set up.
+
+    terracli keys add <keyName>
 
 ## Configure the client
 
-terracli config chain-id columbus-4
+```
 terracli config node tcp://localhost:26657
 terracli config trust-node true
+```
 
-## Set the minimum gas prices
+Run just one of the following commands:
+
+```
+terracli config chain-id columbus-4 # Mainnet
+terracli config chain-id tequila-0004 # Testnet
+```
+
 ## Create the validator
+
+```
+terracli tx oracle set-feeder terra139ycju27xcek7n2ulew308p28pdh6a6mdqac5a --from=terra1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy27m6x --fees 33954000ukrw
+```
+
+The
+
+## Configure the oracle feeder
+
+    terracli tx oracle set-feeder terra139ycju27xcek7n2ulew308p28pdh6a6mdqac5a --from=terra1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy27m6x --fees 33954000ukrw
+
+```
+cd $FEEDER_PATH
+npm start update-key
+```
+
+Requires the mnemonic.
+
+This creates a file voter.json
+
+cd /home/terrau/oracle-feeder/feeder
+/usr/local/bin/npm start vote --\
+  --source http://localhost:8532/latest \
+  --lcd https://lcd.terra.dev \
+  --chain-id "${CHAIN_ID}" \
+  --denoms sdr,krw,usd,mnt,eur,cny,jpy,gbp,inr,cad,chf,hkd,aud,sgd,thb \
+  --validator "${VALIDATOR_KEY}" \
+  --password "${ORACLE_PASS}" \
+  --gas-prices 169.77ukrw
 
