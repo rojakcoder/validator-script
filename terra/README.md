@@ -42,6 +42,13 @@ Recommended - change the name of the machine to easily identify it.
 
 sudo hostname {SERVER-NAME}
 
+Extend the limits for the server by appending the following to /etc/security/limits.conf
+
+```
+*                soft    nofile          65535
+*                hard    nofile          65535
+```
+
 # start.sh
 
 This script is to be run as a user in server. It downloads and sets up the software that is needed to get the validator running.
@@ -68,13 +75,19 @@ For a new server, a snapshot of the blockchain needs to be downloaded for quick 
 
 Download the snapshot from https://terra.quicksync.io/
 
+    sudo apt-get install -y liblz4-tool aria2
     aria2c -x5 https://get.quicksync.io/{SNAPSHOT_FILE_URL}
+
+E.g.
+
+    aria2c -x5 https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4
 
 After downloading, verify the integrity of the file by using the checksum.sh file provided by the service.
 
 ```
-wget {SNAPSHOT_FILE_URL}.checksum
+wget {SNAPSHOT_FILE_URL}.checksum # E.g. https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4.checksum
 curl -s https://lcd.terra.dev/txs/`curl -s https://get.quicksync.io/$FILENAME.hash` | jq -r '.tx.value.memo' | sha512sum -c
+# E.g. curl -s https://lcd.terra.dev/txs/7E4FEEEAD0BCF5FEA016BA2CAD2E8175F019C87324FAB5208D34E6EFD44EFEC3 | jq -r '.tx.value.memo' | sha512sum -c
 wget https://raw.githubusercontent.com/chainlayer/quicksync-playbooks/master/roles/quicksync/files/checksum.sh
 bash checksum.sh {SNAPSHOT_FILE} check
 ```

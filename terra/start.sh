@@ -39,14 +39,12 @@ sudo apt-get install -y jq
 # System configuration
 echo "Configuration"
 echo "============="
-echo -n "Extending limits"
-sudo cp sample/terrad.limit /etc/security/limits.d/terrad.conf
-echo " - done"
 echo -n "Updating bash profile"
 echo "export GOROOT=/usr/local/go" >> ~/.profile
 echo "export GOPATH=$HOME/go" >> ~/.profile
 source ~/.profile
 echo "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH" >> ~/.profile
+source ~/.profile
 echo " - done"
 
 echo "Software installation"
