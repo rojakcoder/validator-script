@@ -140,6 +140,19 @@ The daemon can now be started to run through the blocks.
 
     terrad start
 
+# For a replacement server
+
+Do the same steps for initializing the server. This includes downloading the snapshot file and extracting it.
+
+To do the migration:
+
+1. Stop the old terrad server
+2. Copy `.terrad/config/priv_validator_key.json` to the new node.
+3. Copy `.terrad/data/priv_validator_state.json` to the new node.
+
+(Reference: [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
+(No need to move .terrad/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
+
 # Client
 
 ## Create the keys
