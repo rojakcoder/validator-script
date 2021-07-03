@@ -7,47 +7,21 @@ This folder contains the scripts that streamline the setting up of a validator i
 Before running any of the scripts, if you are starting from a new server as root, the first thing to do is to create a non-root user.
 
 ```
-USER=terrau
-useradd -m -s /bin/bash $USER
-usermod -aG sudo $USER
-# Set the password for the user.
-passwd $USER
+export TERRA_USER=terrau
+./root1.sh
 ```
 
-Then copy the SSH keys that the root user accepts (if any).
+Then copy the SSH keys that the root user accepts (if any) and enable the user to use `sudo` without entering a password.
 
 ```
-cp -r .ssh  /home/$USER
-chown -R $USER:$USER /home/$USER/.ssh
-chmod 644 /home/$USER/.ssh/authorized_keys
+./root2.sh
 ```
 
-Enable the user to use sudo without entering a password.
-
-```
-echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers
-```
-
-Recommended - change the default port and remove root SSH.
-
-```
-# Port 8888
-# PermitRootLogin no
-# PasswordAuthentication no
-```
-
-Then restart the server: `systemctl restart sshd `
+This script also makes changes to SSH default configurations and extends the resource limits.
 
 Recommended - change the name of the machine to easily identify it.
 
 sudo hostname {SERVER-NAME}
-
-Extend the limits for the server by appending the following to /etc/security/limits.conf
-
-```
-*                soft    nofile          65535
-*                hard    nofile          65535
-```
 
 # start.sh
 
