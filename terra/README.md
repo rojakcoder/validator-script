@@ -19,11 +19,11 @@ Then copy the SSH keys that the root user accepts (if any) and enable the user t
 
 This script also makes changes to SSH default configurations and extends the resource limits.
 
-Recommended - change the name of the machine to easily identify it.
+Recommended - change the name of the machine to easily identify it if not already.
 
 sudo hostname {SERVER-NAME}
 
-# start.sh
+# user1.sh
 
 This script is to be run as a user in server. It downloads and sets up the software that is needed to get the validator running.
 
@@ -39,7 +39,7 @@ At a high-level, this script downloads and installs the following
 
 After the script has completed running and the applications are downloaded, be sure to update the following:
 
-- /home/$USER/oracle-feeder/price-server/config/default.js
+> /home/$TERRA_USER/oracle-feeder/price-server/config/default.js
 
 # For a new server
 
@@ -59,18 +59,22 @@ E.g.
 After downloading, verify the integrity of the file by using the checksum.sh file provided by the service.
 
 ```
-wget {SNAPSHOT_FILE_URL}.checksum # E.g. https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4.checksum
+wget {SNAPSHOT_FILE_URL}.checksum
+# E.g. https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4.checksum
+
 curl -s https://lcd.terra.dev/txs/`curl -s https://get.quicksync.io/$FILENAME.hash` | jq -r '.tx.value.memo' | sha512sum -c
 # E.g. curl -s https://lcd.terra.dev/txs/7E4FEEEAD0BCF5FEA016BA2CAD2E8175F019C87324FAB5208D34E6EFD44EFEC3 | jq -r '.tx.value.memo' | sha512sum -c
+
 wget https://raw.githubusercontent.com/chainlayer/quicksync-playbooks/master/roles/quicksync/files/checksum.sh
+
 bash checksum.sh {SNAPSHOT_FILE} check
 ```
 
-If the checksum passes, it means the file was downloaded properly. (This process can take several hours.) The next step is to extract it.
+If the checksum passes, it means the file was downloaded properly. The next step is to extract it.
 
     lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus4
 
-This command extracts the files into /mnt/columbus4/data (assuming /mnt/columbus4 is a separate storage disk). This can also take hours to complete.
+This command extracts the files into /mnt/columbus4/data (assuming /mnt/columbus4 is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
 
 ## Initialize the node
 
@@ -125,6 +129,7 @@ To do the migration:
 3. Copy `.terrad/data/priv_validator_state.json` to the new node.
 
 (Reference: [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
+
 (No need to move .terrad/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
 
 # Client
