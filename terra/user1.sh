@@ -1,30 +1,5 @@
 #!/bin/bash
 
-# This script is meant to be run as a user.
-
-# The following prerequisite steps are meant to be run as root.
-
-## Create a non-root user. (Copy and run)
-#> USER={USER}
-#> useradd -m -s /bin/bash $USER
-#> usermod -aG sudo $USER
-#> passwd $USER
-#> cp -r .ssh /home/$USER
-#> chown -R $USER:$USER /home/$USER/.ssh
-#> chmod 644 /home/$USER/.ssh/authorized_keys
-
-## Enable sudo without password.
-#> echo "$USER ALL=NOPASSWD: ALL" >> /etc/sudoers
-
-## Change the default port and remove root SSH
-#> vi /etc/ssh/sshd_config
-## Port 8888
-## PermitRootLogin no
-## PasswordAuthentication no
-## systemctl restart sshd
-
-# Actual steps to run.
-
 ## Update the repos.
 echo "Updating the system"
 echo "==================="
@@ -33,25 +8,27 @@ sudo apt-get update && sudo apt-get upgrade -y
 # Installation of build tools.
 echo "Installing build tools"
 echo "======================"
-sudo apt-get install -y  build-essential
+sudo apt-get install -y build-essential
 sudo apt-get install -y jq
 
 # System configuration
+GOPATH=$HOME/go
+GOROOT=/usr/local/go
 echo "Configuration"
 echo "============="
-echo -n "Updating bash profile"
-echo "export GOROOT=/usr/local/go" >> ~/.profile
-echo "export GOPATH=$HOME/go" >> ~/.profile
+echo -n "Updating bash profile..."
+echo "export GOROOT=$GOROOT" >> ~/.profile
+echo "export GOPATH=$GOPATH" >> ~/.profile
 source ~/.profile
 echo "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH" >> ~/.profile
 source ~/.profile
-echo " - done"
+echo "  done."
 
 echo "Software installation"
 echo "====================="
 mkdir /home/$USER/downloads
 
-# Installation of Go 
+# Installation of Go
 echo "Installing Go"
 echo "-------------"
 cd /home/$USER/downloads
@@ -74,14 +51,14 @@ terrad version
 
 # Add alias `tc` and `td` for faster typing
 cd /home/$USER/downloads
-echo -n "Adding autocompletion for terrad & terracli commands"
+echo -n "Adding autocompletion for terrad & terracli commands..."
 # Add autocompletion.
 terrad completion > terrad_completion
 terracli completion > terracli_completion
 cat terrad_completion >> ~/.bash_aliases
 cat terracli_completion >> ~/.bash_aliases
 source ~/.profile
-echo " - done"
+echo "  done."
 
 # Install the Price Server
 echo "Downloading Node.js"

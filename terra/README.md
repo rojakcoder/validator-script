@@ -90,11 +90,13 @@ This will create a ".terrad" directory in the home folder. It comes with a file 
 
 For the Mainnet (columbus-4), the genesis file can be downloaded from https://columbus-genesis.s3-ap-northeast-1.amazonaws.com/columbus-4-genesis.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#download-the-genesis-file)).
 
-The address book can be found at https://network.terra.dev/addrbook.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#picking-a-network)).
+~~The address book can be found at https://network.terra.dev/addrbook.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#picking-a-network)).~~ The address book is not actually required.
 
 For the Testnet (tequila-0004), the genesis file can be downloaded from https://raw.githubusercontent.com/terra-project/testnet/master/tequila-0004/genesis.json (reference [github.com](https://github.com/terra-project/testnet)).
 
 The address book can be found at https://network.terra.dev/testnet/addrbook.json
+
+> For Bombay testnet, the genesis file is at https://raw.githubusercontent.com/terra-project/testnet/master/bombay-0007/genesis.json
 
 Update the seeds (~/.terrad/config/config.toml) to begin running the blockchain. The seeds for Mainnet are (reference: [docs.terra.money](https://docs.terra.money/node/join-network.html#define-seed-nodes)):
 
@@ -120,17 +122,92 @@ The daemon can now be started to run through the blocks.
 
 # For a replacement server
 
+One key consideration when preparing a replacement server is whether the blockchain data is migrated or is a new one created.
+
+## Replacement server with new data
+
 Do the same steps for initializing the server. This includes downloading the snapshot file and extracting it.
 
 To do the migration:
 
-1. Stop the old terrad server
+1. Stop the old terrad server.
 2. Copy `.terrad/config/priv_validator_key.json` to the new node.
 3. Copy `.terrad/data/priv_validator_state.json` to the new node.
+4. Start the new terrad server.
 
 (Reference: [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
 
 (No need to move .terrad/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
+
+## Replacement server with existing data
+
+Prepare the server by making the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
+
+What _needs_ to be done is to re-attach the block storage when doing the migration. To prepare for this step, the following commands can be run prior to the stopping of the old server.
+
+```bash
+sudo mkdir /mnt/columbus4
+sudo chown $USER:$USER -R /mnt/columbus4
+mkdir -p ~/columbus
+mv -i ~/.terrad/data ~/columbus
+ln -s /mnt/columbus4/data ~/.terrad/data
+```
+
+To do the migration:
+
+1. Stop the old terrad server.
+2. Unmount the storage volume.
+3. Copy `.terrad/config/priv_validator_key.json` to the new node.
+4. Mount the storage volume to the new server.
+5. Start the new terrad server.
+
+The sequence of commands is described in the next section.
+
+## Synchronization
+
+To sync data quickly and easily, the replacement server (Server B) needs to generate a set of SSH keys to access the origin server (Server A).
+
+```bash
+# Server B
+## Create a hosts file entry for the origin server server-a.
+vi /etc/hosts
+ssh-keygen -t ed25519 -C <name-of-key>
+ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 22 server-a
+```
+
+Sync the CLI folder to make that the keys are transferred correctly.
+
+```bash
+rsync server-a:.terracli/ ~/.terracli/ -e 'ssh -p 22' -vzrcn
+# Remove `n` for an actual sync.
+```
+
+Create the following sync script in Server B:
+
+```bash
+#!/bin/bash
+mkdir -p /tmp/staging
+rsync server-a:.terrad/config/priv_validator_key.json /tmp/staging/ -e 'ssh -p 22' -vzrc
+mv -i /tmp/staging/priv_validator_key.json ~/.terrad/config/
+
+# Include the below for a replacement server with new data.
+rsync server-a:.terrad/data/priv_validator_state.json /tmp/staging/ -e 'ssh -p 22' -vzrc
+mv -i /tmp/staging/priv_validator_state.json ~/.terrad/data/
+```
+
+## Commands:
+
+```bash
+# server-a
+sudo systemctl terrad stop
+umount /dev/sda
+
+# server-b
+bash sync.sh
+# console: mount the volume
+sudo mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus4e /mnt/columbus4
+sudo systemctl terrad start
+```
 
 # Client
 
@@ -160,8 +237,6 @@ terracli config chain-id tequila-0004 # Testnet
 terracli tx oracle set-feeder terra139ycju27xcek7n2ulew308p28pdh6a6mdqac5a --from=terra1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy27m6x --fees 33954000ukrw
 ```
 
-The
-
 ## Configure the oracle feeder
 
     terracli tx oracle set-feeder terra139ycju27xcek7n2ulew308p28pdh6a6mdqac5a --from=terra1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy27m6x --fees 33954000ukrw
@@ -177,11 +252,10 @@ This creates a file voter.json
 
 cd /home/terrau/oracle-feeder/feeder
 /usr/local/bin/npm start vote --\
-  --source http://localhost:8532/latest \
-  --lcd https://lcd.terra.dev \
-  --chain-id "${CHAIN_ID}" \
+ --source http://localhost:8532/latest \
+ --lcd https://lcd.terra.dev \
+ --chain-id "${CHAIN_ID}" \
   --denoms sdr,krw,usd,mnt,eur,cny,jpy,gbp,inr,cad,chf,hkd,aud,sgd,thb \
   --validator "${VALIDATOR_KEY}" \
-  --password "${ORACLE_PASS}" \
-  --gas-prices 169.77ukrw
-
+ --password "${ORACLE_PASS}" \
+ --gas-prices 169.77ukrw

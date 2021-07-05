@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=terrau
-ExecStart=/home/terrau/go/bin/terrad start
+User=$USER
+ExecStart=/home/$USER/go/bin/terrad start
 Restart=on-failure
 RestartSec=5s
 
@@ -14,5 +14,3 @@ WantedBy=multi-user.target
 
 [Service]
 LimitNOFILE=65537
-
-
