@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exec 3>&1 4>&2 >user1.sh.log 2>&1
+
 ## Update the repos.
 echo "Updating the system"
 echo "==================="
@@ -19,9 +21,7 @@ echo "============="
 echo -n "Updating bash profile..."
 echo "export GOROOT=$GOROOT" >> ~/.profile
 echo "export GOPATH=$GOPATH" >> ~/.profile
-source ~/.profile
 echo "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH" >> ~/.profile
-source ~/.profile
 echo "  done."
 
 echo "Software installation"
@@ -34,8 +34,9 @@ echo "-------------"
 cd /home/$USER/downloads
 curl -o go1.16.3.linux-amd64.tar.gz https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz
 sudo tar -C /usr/local -zxvf go1.16.3.linux-amd64.tar.gz
+source ~/.profile
 echo -n "Installed "
-/usr/local/go/bin/go version
+go version
 
 # Installation of terrad
 echo "Installing terrad"
@@ -100,3 +101,4 @@ cd /home/$USER/oracle-feeder/price-server
 echo "Making a default configuration file. REMEMBER TO CHANGE config/default.js"
 cp config/default-sample.js config/default.js
 
+exec 1>&3 2>&4
