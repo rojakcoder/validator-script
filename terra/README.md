@@ -96,7 +96,7 @@ For the Testnet (tequila-0004), the genesis file can be downloaded from https://
 
 The address book can be found at https://network.terra.dev/testnet/addrbook.json
 
-> For Bombay testnet, the genesis file is at https://raw.githubusercontent.com/terra-project/testnet/master/bombay-0007/genesis.json
+For Bombay testnet, the genesis file is at https://raw.githubusercontent.com/terra-project/testnet/master/bombay-0007/genesis.json
 
 Update the seeds (~/.terrad/config/config.toml) to begin running the blockchain. The seeds for Mainnet are (reference: [docs.terra.money](https://docs.terra.money/node/join-network.html#define-seed-nodes)):
 
@@ -124,6 +124,24 @@ The daemon can now be started to run through the blocks.
 
 One key consideration when preparing a replacement server is whether the blockchain data is migrated or is a new one created.
 
+## SSH keys
+
+Regardless of whether the data is migrated or is generated from a snapshot, the replacement server (Server B) should be able to access the origin server (Server A) via SSH.
+
+```bash
+# Server B
+vi /etc/hosts # Create a hosts file entry for the origin server.
+ssh-keygen -t ed25519 -C server-b
+ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 22 server-a
+```
+
+Before running either of the options described next, it is prudent to keep the SSH key in memory because the commands need to be executed quickly.
+
+```bash
+eval `ssh-agent`
+ssh-add ~/.ssh/id_ed25519.pub
+```
+
 ## Replacement server with new data
 
 Do the same steps for initializing the server. This includes downloading the snapshot file and extracting it.
@@ -139,11 +157,57 @@ To do the migration:
 
 (No need to move .terrad/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
 
+### Commands
+
+Sync the client data over:
+
+```bash
+rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
+```
+
+Create the following sync script in Server B:
+
+```bash
+#!/bin/bash
+mkdir -p /tmp/staging
+rsync server-a:.terrad/config/priv_validator_key.json /tmp/staging/ -e 'ssh -p 22' -vzr
+mv -i /tmp/staging/priv_validator_key.json ~/.terrad/config/
+# Below is needed for a replacement server with its own data.
+rsync server-a:.terrad/data/priv_validator_state.json /tmp/staging/ -e 'ssh -p 22' -vzrc
+mv -i /tmp/staging/priv_validator_state.json ~/.terrad/data/
+```
+
 ## Replacement server with existing data
 
 Prepare the server by making the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
 
-What _needs_ to be done is to re-attach the block storage when doing the migration. To prepare for this step, the following commands can be run prior to the stopping of the old server.
+What _needs_ to be done is to re-attach the block storage when doing the migration.
+
+To do the migration:
+
+1. Stop the old terrad server.
+2. Unmount the storage volume.
+3. Sync the terrad folders over.
+4. Mount the storage volume to the new server.
+5. Start the new terrad server.
+
+### Commands
+
+Sync the client data over:
+
+```bash
+rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
+```
+
+Create the following sync script in Server B:
+
+```bash
+#!/bin/bash
+rsync server-a:.terrad ~/ -e 'ssh -p 22' -vzrc
+rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
+```
+
+The following commands can be run prior to the stopping of the old server.
 
 ```bash
 sudo mkdir /mnt/columbus4
@@ -153,49 +217,22 @@ mv -i ~/.terrad/data ~/columbus
 ln -s /mnt/columbus4/data ~/.terrad/data
 ```
 
-To do the migration:
-
-1. Stop the old terrad server.
-2. Unmount the storage volume.
-3. Copy `.terrad/config/priv_validator_key.json` to the new node.
-4. Mount the storage volume to the new server.
-5. Start the new terrad server.
-
-The sequence of commands is described in the next section.
-
-## Synchronization
-
-To sync data quickly and easily, the replacement server (Server B) needs to generate a set of SSH keys to access the origin server (Server A).
+The sequence of commands below needs to be executed in quick succession.
 
 ```bash
-# Server B
-## Create a hosts file entry for the origin server server-a.
-vi /etc/hosts
-ssh-keygen -t ed25519 -C <name-of-key>
-ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 22 server-a
+# server-a
+sudo systemctl terrad stop
+umount /dev/sda
+
+# server-b
+bash sync.sh
+
+# Detach volume from Server A and attach to Server B.
+
+# server-b
+sudo mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus4e /mnt/columbus4
+sudo systemctl terrad start
 ```
-
-Sync the CLI folder to make that the keys are transferred correctly.
-
-```bash
-rsync server-a:.terracli/ ~/.terracli/ -e 'ssh -p 22' -vzrcn
-# Remove `n` for an actual sync.
-```
-
-Create the following sync script in Server B:
-
-```bash
-#!/bin/bash
-mkdir -p /tmp/staging
-rsync server-a:.terrad/config/priv_validator_key.json /tmp/staging/ -e 'ssh -p 22' -vzrc
-mv -i /tmp/staging/priv_validator_key.json ~/.terrad/config/
-
-# Include the below for a replacement server with new data.
-rsync server-a:.terrad/data/priv_validator_state.json /tmp/staging/ -e 'ssh -p 22' -vzrc
-mv -i /tmp/staging/priv_validator_state.json ~/.terrad/data/
-```
-
-## Commands:
 
 ```bash
 # server-a

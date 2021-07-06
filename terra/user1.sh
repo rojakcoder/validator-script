@@ -1,7 +1,5 @@
 #!/bin/bash
 
-exec 3>&1 4>&2 >user1.sh.log 2>&1
-
 ## Update the repos.
 echo "Updating the system"
 echo "==================="
@@ -26,13 +24,13 @@ echo "  done."
 
 echo "Software installation"
 echo "====================="
-mkdir /home/$USER/downloads
+mkdir -p $HOME/Downloads
 
 # Installation of Go
 echo "Installing Go"
 echo "-------------"
-cd /home/$USER/downloads
-curl -o go1.16.3.linux-amd64.tar.gz https://dl.google.com/go/go1.16.3.linux-amd64.tar.gz
+cd $HOME/Downloads
+wget https://golang.org/dl/go1.16.5.linux-amd64.tar.gz
 sudo tar -C /usr/local -zxvf go1.16.3.linux-amd64.tar.gz
 source ~/.profile
 echo -n "Installed "
@@ -41,17 +39,17 @@ go version
 # Installation of terrad
 echo "Installing terrad"
 echo "-----------------"
-mkdir /home/$USER/go
-cd /home/$USER/downloads
+mkdir -p $HOME/go
+cd $HOME/Downloads
 git clone https://github.com/terra-project/core
-cd /home/$USER/downloads/core
+cd $HOME/Downloads/core
 git checkout v0.4.6
 make install
 echo -n "Installed terrad "
 terrad version
 
 # Add alias `tc` and `td` for faster typing
-cd /home/$USER/downloads
+cd $HOME/Downloads
 echo -n "Adding autocompletion for terrad & terracli commands..."
 # Add autocompletion.
 terrad completion > terrad_completion
@@ -64,7 +62,7 @@ echo "  done."
 # Install the Price Server
 echo "Downloading Node.js"
 echo "-------------------"
-cd /home/$USER/downloads
+cd $HOME/Downloads
 wget https://nodejs.org/dist/v14.16.1/node-v14.16.1-linux-x64.tar.xz
 tar -xvf node-v14.16.1-linux-x64.tar.xz
 cd node-v14.16.1-linux-x64/
@@ -88,17 +86,15 @@ rmdir node-v14.16.1-linux-x64
 # Install the Oracle Feeder and Price Server
 echo "Downloading Oracle Feeder"
 echo "-------------------------"
-cd /home/$USER
+cd $HOME
 git clone https://github.com/terra-project/oracle-feeder.git
 
 echo "- Installing Feeder."
-cd /home/$USER/oracle-feeder/feeder
+cd $HOME/oracle-feeder/feeder
 /usr/local/bin/npm install
 
 echo "- Installing Price Server."
-cd /home/$USER/oracle-feeder/price-server
+cd $HOME/oracle-feeder/price-server
 /usr/local/bin/npm install
 echo "Making a default configuration file. REMEMBER TO CHANGE config/default.js"
 cp config/default-sample.js config/default.js
-
-exec 1>&3 2>&4
