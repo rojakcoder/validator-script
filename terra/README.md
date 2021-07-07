@@ -213,37 +213,39 @@ The following commands can be run prior to the stopping of the old server.
 sudo mkdir /mnt/columbus4
 sudo chown $USER:$USER -R /mnt/columbus4
 mkdir -p ~/columbus
-mv -i ~/.terrad/data ~/columbus
+mv -i ~/.terrad ~/columbus
+bash sync.sh
 ln -s /mnt/columbus4/data ~/.terrad/data
+```
+
+Before following the next steps, it is prudent to reboot the machine and re-run the SSH agent.
+
+```bash
+sudo reboot
+# After rebooting,
+eval `ssh-agent`
+ssh-add ~/.ssh/id_ed25519.pub
+bash sync.sh
 ```
 
 The sequence of commands below needs to be executed in quick succession.
 
 ```bash
 # server-a
-sudo systemctl terrad stop
+sudo systemctl stop terrad
 umount /dev/sda
-
-# server-b
-bash sync.sh
-
 # Detach volume from Server A and attach to Server B.
 
 # server-b
+bash sync.sh
 sudo mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus4e /mnt/columbus4
-sudo systemctl terrad start
+sudo systemctl start terrad
 ```
 
-```bash
-# server-a
-sudo systemctl terrad stop
-umount /dev/sda
+Finally, the command to automatically mount the volume needs to be added to /etc/fstab
 
-# server-b
-bash sync.sh
-# console: mount the volume
-sudo mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus4e /mnt/columbus4
-sudo systemctl terrad start
+```
+
 ```
 
 # Client

@@ -31,7 +31,7 @@ echo "Installing Go"
 echo "-------------"
 cd $HOME/Downloads
 wget https://golang.org/dl/go1.16.5.linux-amd64.tar.gz
-sudo tar -C /usr/local -zxvf go1.16.3.linux-amd64.tar.gz
+sudo tar -C /usr/local -zxvf go1.16.5.linux-amd64.tar.gz
 source ~/.profile
 echo -n "Installed "
 go version
