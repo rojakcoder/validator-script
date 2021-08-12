@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=simple
-User=terrau
-ExecStart=/home/terrau/oracle-feeder/price-server/price-server-start.sh
+User=$USER
+ExecStart=/home/$USER/oracle-feeder/price-server/price-server-start.sh
 Restart=on-failure
 RestartSec=5s
 

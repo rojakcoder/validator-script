@@ -48,7 +48,6 @@ make install
 echo -n "Installed terrad "
 terrad version
 
-# Add alias `tc` and `td` for faster typing
 cd $HOME/Downloads
 echo -n "Adding autocompletion for terrad & terracli commands..."
 # Add autocompletion.

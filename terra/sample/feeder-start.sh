@@ -1,5 +1,5 @@
 #!/bin/bash
-cd /home/terrau/oracle-feeder/feeder
+cd /home/$USER/oracle-feeder/feeder
 /usr/local/bin/npm start vote --\
   --source http://localhost:8532/latest \
   --lcd https://lcd.terra.dev \
@@ -7,4 +7,4 @@ cd /home/terrau/oracle-feeder/feeder
   --denoms sdr,krw,usd,mnt,eur,cny,jpy,gbp,inr,cad,chf,hkd,aud,sgd,thb \
   --validator "${VALIDATOR_KEY}" \
   --password "${ORACLE_PASS}" \
-  --gas-prices 169.77ukrw
+  --gas-prices 0
