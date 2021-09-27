@@ -8,9 +8,8 @@ User=$USER
 ExecStart=/home/$USER/go/bin/terrad start
 Restart=on-failure
 RestartSec=5s
+LimitNOFILE=65537
 
 [Install]
 WantedBy=multi-user.target
 
-[Service]
-LimitNOFILE=65537

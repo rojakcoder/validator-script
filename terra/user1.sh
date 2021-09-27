@@ -27,23 +27,25 @@ echo "====================="
 mkdir -p $HOME/Downloads
 
 # Installation of Go
+VERSION_GO=1.16.8
 echo "Installing Go"
 echo "-------------"
 cd $HOME/Downloads
-wget https://golang.org/dl/go1.16.5.linux-amd64.tar.gz
-sudo tar -C /usr/local -zxvf go1.16.5.linux-amd64.tar.gz
+wget https://golang.org/dl/go${VERSION_GO}.linux-amd64.tar.gz
+sudo tar -C /usr/local -zxvf go${VERSION_GO}.linux-amd64.tar.gz
 source ~/.profile
 echo -n "Installed "
 go version
 
 # Installation of terrad
+VERSION_CORE=v0.4.6
 echo "Installing terrad"
 echo "-----------------"
 mkdir -p $HOME/go
 cd $HOME/Downloads
 git clone https://github.com/terra-project/core
 cd $HOME/Downloads/core
-git checkout v0.4.6
+git checkout ${VERSION_CORE}
 make install
 echo -n "Installed terrad "
 terrad version
@@ -59,12 +61,13 @@ source ~/.profile
 echo "  done."
 
 # Install the Price Server
+VERSION_NODE=v14.17.6
 echo "Downloading Node.js"
 echo "-------------------"
 cd $HOME/Downloads
-wget https://nodejs.org/dist/v14.16.1/node-v14.16.1-linux-x64.tar.xz
-tar -xvf node-v14.16.1-linux-x64.tar.xz
-cd node-v14.16.1-linux-x64/
+wget https://nodejs.org/dist/${VERSION_NODE}/node-${VERSION_NODE}-linux-x64.tar.xz
+tar -xvf node-${VERSION_NODE}-linux-x64.tar.xz
+cd node-${VERSION_NODE}-linux-x64/
 sudo mv -i bin/* /usr/local/bin/
 rmdir bin
 sudo mv -i include/node /usr/local/include/
@@ -80,13 +83,18 @@ rm CHANGELOG.md
 rm LICENSE
 rm README.md
 cd ..
-rmdir node-v14.16.1-linux-x64
+rmdir node-${VERSION_NODE}-linux-x64
 
 # Install the Oracle Feeder and Price Server
 echo "Downloading Oracle Feeder"
 echo "-------------------------"
 cd $HOME
 git clone https://github.com/terra-project/oracle-feeder.git
+
+VERSION_FEEDER=v1.4.5
+echo "Switching to version $VERSION_FEEDER"
+cd $HOME/oracle-feeder
+git checkout $VERSION_FEEDER
 
 echo "- Installing Feeder."
 cd $HOME/oracle-feeder/feeder
