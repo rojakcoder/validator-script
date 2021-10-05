@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=$USER
-Environment=CHAIN_ID=tequila-0004
+Environment=CHAIN_ID=bombay-12
 Environment=ORACLE_PASS=YOUR_PASSWORD_HERE
 Environment=VALIDATOR_KEY=terravaloper12fdlnnc9hsphdrt07hqjzazudc8ztc999h2auz
 ExecStart=/home/$USER/oracle-feeder/feeder/feeder-start.sh

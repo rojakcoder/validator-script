@@ -2,9 +2,8 @@
 cd /home/$USER/oracle-feeder/feeder
 /usr/local/bin/npm start vote --\
   --source http://localhost:8532/latest \
+  --lcd http://localhost:1317 \
   --lcd https://lcd.terra.dev \
   --chain-id "${CHAIN_ID}" \
-  --denoms sdr,krw,usd,mnt,eur,cny,jpy,gbp,inr,cad,chf,hkd,aud,sgd,thb \
   --validator "${VALIDATOR_KEY}" \
-  --password "${ORACLE_PASS}" \
-  --gas-prices 0
+  --password "${ORACLE_PASS}"
