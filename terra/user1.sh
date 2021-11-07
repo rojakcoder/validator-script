@@ -27,7 +27,7 @@ echo "====================="
 mkdir -p $HOME/Downloads
 
 # Installation of Go
-VERSION_GO=1.16.8
+VERSION_GO=1.17.3
 echo "Installing Go"
 echo "-------------"
 cd $HOME/Downloads
@@ -38,7 +38,7 @@ echo -n "Installed "
 go version
 
 # Installation of terrad
-VERSION_CORE=v0.4.6
+VERSION_CORE=v0.5.10-oracle
 echo "Installing terrad"
 echo "-----------------"
 mkdir -p $HOME/go
@@ -61,7 +61,7 @@ source ~/.profile
 echo "  done."
 
 # Install the Price Server
-VERSION_NODE=v14.17.6
+VERSION_NODE=v14.18.0
 echo "Downloading Node.js"
 echo "-------------------"
 cd $HOME/Downloads
