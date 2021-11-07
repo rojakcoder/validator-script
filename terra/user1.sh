@@ -54,9 +54,7 @@ cd $HOME/Downloads
 echo -n "Adding autocompletion for terrad & terracli commands..."
 # Add autocompletion.
 terrad completion > terrad_completion
-terracli completion > terracli_completion
 cat terrad_completion >> ~/.bash_aliases
-cat terracli_completion >> ~/.bash_aliases
 source ~/.profile
 echo "  done."
 
@@ -91,7 +89,7 @@ echo "-------------------------"
 cd $HOME
 git clone https://github.com/terra-project/oracle-feeder.git
 
-VERSION_FEEDER=v1.4.5
+VERSION_FEEDER=v2.0.0
 echo "Switching to version $VERSION_FEEDER"
 cd $HOME/oracle-feeder
 git checkout $VERSION_FEEDER
