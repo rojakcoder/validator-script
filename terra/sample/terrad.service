@@ -9,7 +9,9 @@ ExecStart=/home/$USER/go/bin/terrad start
 Restart=on-failure
 RestartSec=5s
 LimitNOFILE=65537
+Nice=-20
+IOSchedulingPriority=0
+IOSchedulingClass=realtime
 
 [Install]
 WantedBy=multi-user.target
-

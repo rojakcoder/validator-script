@@ -27,7 +27,7 @@ echo "====================="
 mkdir -p $HOME/Downloads
 
 # Installation of Go
-VERSION_GO=1.17.3
+VERSION_GO=1.17.5
 echo "Installing Go"
 echo "-------------"
 cd $HOME/Downloads
@@ -38,7 +38,7 @@ echo -n "Installed "
 go version
 
 # Installation of terrad
-VERSION_CORE=v0.5.10-oracle
+VERSION_CORE=v0.5.12-oracle
 echo "Installing terrad"
 echo "-----------------"
 mkdir -p $HOME/go
@@ -59,7 +59,7 @@ source ~/.profile
 echo "  done."
 
 # Install the Price Server
-VERSION_NODE=v14.18.0
+VERSION_NODE=v16.13.1
 echo "Downloading Node.js"
 echo "-------------------"
 cd $HOME/Downloads
@@ -89,10 +89,10 @@ echo "-------------------------"
 cd $HOME
 git clone https://github.com/terra-project/oracle-feeder.git
 
-VERSION_FEEDER=v2.0.0
-echo "Switching to version $VERSION_FEEDER"
-cd $HOME/oracle-feeder
-git checkout $VERSION_FEEDER
+# VERSION_FEEDER=v2.0.0
+# echo "Switching to version $VERSION_FEEDER"
+# cd $HOME/oracle-feeder
+# git checkout $VERSION_FEEDER
 
 echo "- Installing Feeder."
 cd $HOME/oracle-feeder/feeder

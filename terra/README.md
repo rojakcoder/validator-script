@@ -29,11 +29,11 @@ This script is to be run as a user in server. It downloads and sets up the softw
 
 At a high-level, this script downloads and installs the following
 
-- Go 1.16.3
-- Terra 0.4.6
-- Node.js 14.16.1
-- Oracle Feeder - Price Server 1.10
-- Oracle Feeder - Feeder 1.10
+- Go 1.17.5
+- Terra 0.5.12-oracle
+- Node.js 16.13.1
+- Oracle Feeder - Price Server (latest in main)
+- Oracle Feeder - Feeder (latest in main)
 
 ## Post setup
 
@@ -72,9 +72,9 @@ bash checksum.sh {SNAPSHOT_FILE} check
 
 If the checksum passes, it means the file was downloaded properly. The next step is to extract it.
 
-    lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus4
+    lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus5a
 
-This command extracts the files into /mnt/columbus4/data (assuming /mnt/columbus4 is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
+This command extracts the files into /mnt/columbus5a/data (assuming /mnt/columbus5a is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
 
 ## Initialize the node
 
@@ -114,7 +114,7 @@ Reference: https://discord.com/channels/566086600560214026/566126728578072586/84
 
 Make sure that the data folder points to the actual files by creating a symbolic link to the folder.
 
-    ln -s /mnt/columbus4/data ~/.terrad/data
+    ln -s /mnt/columbus5a/data ~/.terrad/data
 
 The daemon can now be started to run through the blocks.
 
@@ -159,7 +159,7 @@ To do the migration:
 
 ### Commands
 
-Sync the client data over:
+~~Sync the client data over:~~
 
 ```bash
 rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
@@ -179,11 +179,11 @@ mv -i /tmp/staging/priv_validator_state.json ~/.terrad/data/
 
 ## Replacement server with existing data
 
-Prepare the server by making the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
+Prepare the server by making sure that the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
 
 What _needs_ to be done is to re-attach the block storage when doing the migration.
 
-To do the migration:
+The steps for the migration:
 
 1. Stop the old terrad server.
 2. Unmount the storage volume.
@@ -192,31 +192,6 @@ To do the migration:
 5. Start the new terrad server.
 
 ### Commands
-
-Sync the client data over:
-
-```bash
-rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
-```
-
-Create the following sync script in Server B:
-
-```bash
-#!/bin/bash
-rsync server-a:.terrad ~/ -e 'ssh -p 22' -vzrc
-rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
-```
-
-The following commands can be run prior to the stopping of the old server.
-
-```bash
-sudo mkdir /mnt/columbus4
-sudo chown $USER:$USER -R /mnt/columbus4
-mkdir -p ~/columbus
-mv -i ~/.terrad ~/columbus
-bash sync.sh
-ln -s /mnt/columbus4/data ~/.terrad/data
-```
 
 Before following the next steps, it is prudent to reboot the machine and re-run the SSH agent.
 
@@ -228,7 +203,43 @@ ssh-add ~/.ssh/id_ed25519.pub
 bash sync.sh
 ```
 
-The sequence of commands below needs to be executed in quick succession.
+Create the following sync script (sync.sh) in Server B:
+
+```bash
+#!/bin/bash
+rsync server-a:.terra/config ~/.terra/ -e 'ssh -p 22' --delete --exclude=node_key.json -vzrc
+rsync server-a:oracle-feeder/price-server/config/default.js ~/oracle-feeder/price-server/config/ -e 'ssh -p 22' -vzrc
+rsync server-a:oracle-feeder/feeder/voter.json ~/oracle-feeder/feeder/ -e 'ssh -p 22' -vzrc
+rsync server-a:/etc/systemd/system/price-server.service ~/ -e 'ssh -p 22' -vzrc
+rsync server-a:/etc/systemd/system/feeder.service ~/ -e 'ssh -p 22' -vzrc
+rsync server-a:/etc/systemd/system/terrad.service ~/ -e 'ssh -p 22' -vzrc
+```
+
+The following commands can be run prior to the stopping of the old server.
+
+```bash
+sudo mkdir /mnt/columbus5a
+sudo chown $TERRA_USER:$TERRA_USER -R /mnt/columbus5a
+bash sync.sh
+ln -s /mnt/columbus5a/data ~/.terrad/data
+```
+
+Running the sync script will create three systemd service files in the home directory. They are to be moved to _/etc/systemd/system_ after checking for correctness.
+
+The ownership of the files also need to be set to `root:root`
+
+After doing so, the first service that can be executed with no problems is the price server.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start price-server.service
+```
+
+The service can be confirmed to be running by executing `journalctl -u price-server.service -f`
+
+### Actual migration
+
+The sequence of commands below needs to be **executed in quick succession**.
 
 ```bash
 # server-a
@@ -238,14 +249,30 @@ umount /dev/sda
 
 # server-b
 bash sync.sh
-sudo mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus4e /mnt/columbus4
+# Check that the symbolic link works.
+sudo mount -o nodiscard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus5a && ls -l ~/.terra/
+# Update ownership
+sudo chown -R $USER:$USER /mnt/columbus5a
 sudo systemctl start terrad
 ```
 
-Finally, the command to automatically mount the volume needs to be added to /etc/fstab
+The command to automatically mount the volume needs to be added to /etc/fstab so that the volume is auto-mounted on reboot.
 
 ```
+/dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus5a ext4 defaults,nofail,noatime 0 0
+```
 
+After `terrad` is running as a service, the next service to run is the feeder.
+
+```bash
+sudo systemctl start feeder.service
+journalctl -u feeder.service -f
+```
+
+When the feeder is running smooth for a while, the monitoring script can be started to monitor the oracle feeder's performance.
+
+```bash
+bash oracle-monitor.sh terravaloper1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy9jx24 http://localhost:1317
 ```
 
 # Client
