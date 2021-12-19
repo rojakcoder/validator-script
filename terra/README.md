@@ -30,10 +30,12 @@ This script is to be run as a user in server. It downloads and sets up the softw
 At a high-level, this script downloads and installs the following
 
 - Go 1.17.5
-- Terra 0.5.12-oracle
+- Terra 0.5.13-oracle
 - Node.js 16.13.1
 - Oracle Feeder - Price Server (latest in main)
 - Oracle Feeder - Feeder (latest in main)
+
+> As the script isn't very robust, it is preferable to copy each command and run it line by line.
 
 ## Post setup
 
@@ -41,42 +43,232 @@ After the script has completed running and the applications are downloaded, be s
 
 > /home/$TERRA_USER/oracle-feeder/price-server/config/default.js
 
-# For a new server
+# Migration
 
-For a new server, a snapshot of the blockchain needs to be downloaded for quick sync. The sections below describe the steps for setting up a new node. If running a replacement node, see section "For a replacement server".
+To migrate the validator, the main consideration is whether the blockchain data is available or not. In other words, whether the blockchain data is available on an external storage volume or does it need to be rebuilt. The latter scenario typically happens when moving to a different provider.
 
-## Download a snapshot
+Regardless of the scenarios, the steps described in Phase 1 and Phase 3 should be followed. It is Phase 2 where the steps differ depending on the scenario.
+
+## Phase 1
+
+## SSH keys
+
+Regardless of whether the data is migrated or is generated from a snapshot, the replacement server (Server B) should be able to access the origin server (Server A) via SSH.
+
+```bash
+# Server B
+SERVER_A=server-a
+SERVER_B=server-b
+SSH_PORT=22
+vi /etc/hosts # Create a hosts file entry for the origin server.
+ssh-keygen -t ed25519 -C $SERVER_B
+ssh-copy-id -i ~/.ssh/id_ed25519.pub -p $SSH_PORT $SERVER_A
+```
+
+OPTIONAL: Before running either of the options described next, it is prudent to keep the SSH key in memory because the commands need to be executed quickly.
+
+```bash
+eval `ssh-agent`
+ssh-add ~/.ssh/id_ed25519.pub
+```
+
+## Sync script
+
+Create the following sync script (sync.sh) in Server B:
+
+```bash
+#!/bin/bash
+rsync $SERVER_A:.terra/config/ ~/.terra/config/ -e 'ssh -p $SSH_PORT' --delete --include-from=~/validator-script/terra/includes.txt -vzrc
+# Validator key is not synchronized here as it might be for a new server.
+rsync $SERVER_A:oracle-feeder/price-server/config/default.js ~/oracle-feeder/price-server/config/ -e 'ssh -p $SSH_PORT' -vzrc
+rsync $SERVER_A:oracle-feeder/feeder/voter.json ~/oracle-feeder/feeder/ -e 'ssh -p $SSH_PORT' -vzrc
+rsync $SERVER_A:/etc/systemd/system/price-server.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
+rsync $SERVER_A:/etc/systemd/system/feeder.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
+rsync $SERVER_A:/etc/systemd/system/terrad.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
+```
+
+(No need to move .terra/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
+
+The following commands can be run prior to the stopping of the old server.
+
+```bash
+sudo mkdir /mnt/columbus-a
+sudo chown $TERRA_USER:$TERRA_USER -R /mnt/columbus-a
+bash sync.sh
+ln -s /mnt/columbus-a/data ~/.terrad/data
+```
+
+Running the sync script will create three systemd service files in the home directory. They are to be moved to _/etc/systemd/system_ after checking for correctness (i.e. ensure that path and user account are correct).
+
+The ownership of these files also need to be set to `root:root`
+
+```bash
+sudo chown root:root price-server.service
+sudo chown root:root feeder.service
+sudo chown root:root terrad.service
+sudo mv -i *service /etc/systemd/system/
+```
+
+After doing so, the first service that can be started on server-b with no dependencies is the price server.
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start price-server.service
+```
+
+The service can be confirmed to be running by executing
+
+```bash
+journalctl -u price-server.service -f
+```
+
+## Phase 2A: Migration with no pre-existing blockchain data
+
+For a new server, a snapshot of the blockchain needs to be downloaded for quick sync.
+
+### Download a snapshot
+
+DO THIS FIRST AS THIS CAN TAKE A LONG TIME.
 
 Download the snapshot from https://terra.quicksync.io/
 
-    sudo apt-get install -y liblz4-tool aria2
-    aria2c -x5 https://get.quicksync.io/{SNAPSHOT_FILE_URL}
+```bash
+sudo apt-get install -y liblz4-tool aria2
+aria2c -x5 https://get.quicksync.io/$SNAPSHOT_FILENAME
 
-E.g.
-
-    aria2c -x5 https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4
+# E.g.
+# aria2c -x5 https://getsin.quicksync.io/columbus-5-pruned.20211217.0210.tar.lz4
+```
 
 After downloading, verify the integrity of the file by using the checksum.sh file provided by the service.
 
-```
-wget {SNAPSHOT_FILE_URL}.checksum
-# E.g. https://get.quicksync.io/columbus-4-pruned.20210630.0310.tar.lz4.checksum
+```bash
+wget https://get.quicksync.io/${SNAPSHOT_FILENAME}.checksum
+# E.g.
+# wget https://getsin.quicksync.io/columbus-5-pruned.20211217.0210.tar.lz4.checksum
 
-curl -s https://lcd.terra.dev/txs/`curl -s https://get.quicksync.io/$FILENAME.hash` | jq -r '.tx.value.memo' | sha512sum -c
-# E.g. curl -s https://lcd.terra.dev/txs/7E4FEEEAD0BCF5FEA016BA2CAD2E8175F019C87324FAB5208D34E6EFD44EFEC3 | jq -r '.tx.value.memo' | sha512sum -c
+# Read the transaction hash from the page https://quicksync.io/networks/terra.html according to the mirror the hash is downloaded from.
+
+curl -s https://lcd.terra.dev/txs/$HASH | jq -r '.tx.value.memo' | sha512sum -c
 
 wget https://raw.githubusercontent.com/chainlayer/quicksync-playbooks/master/roles/quicksync/files/checksum.sh
 
-bash checksum.sh {SNAPSHOT_FILE} check
+bash checksum.sh $SNAPSHOT_FILENAME check
 ```
 
 If the checksum passes, it means the file was downloaded properly. The next step is to extract it.
 
-    lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus5a
+```bash
+lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus-a
+```
 
-This command extracts the files into /mnt/columbus5a/data (assuming /mnt/columbus5a is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
+This command extracts the files into /mnt/columbus-a/data (assuming /mnt/columbus-a is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
 
-## Initialize the node
+Once the extraction is complete, run `sudo systemctl start terrad` and wait for it to catch up.
+
+Once it is caught up:
+
+1. Stop the old server.
+2. Stop the new server.
+3. Copy the _priv_validator_key.json_ file to the new node.
+4. Copy the _priv_validator_state.json_ file to the new node.
+5. Start the new server.
+
+(Reference: https://discord.com/channels/566086600560214026/566126867686621185/806929605629968396)
+
+### Actual migration
+
+The sequence of commands below needs to be **excuted in quick succession**.
+
+```bash
+# 1. server-a
+sudo systemctl stop terrad
+# 2. server-b
+sudo systemctl stop terrad
+# 3. server-b
+rsync $SERVER_A:.terra/config/priv_validator_key.json ~/.terra/config/ -e 'ssh -p $SSH_PORT' -vzc
+# 4. server-b
+rsync $SERVER_A:.terra/data/priv_validator_state.json ~/.terra/data/ -e 'ssh -p $SSH_PORT' -vzc
+# 5. server-b
+sudo systemctl start terrad
+```
+
+## Phase 2B: Migration with blockchain data available
+
+Prepare the server by making sure that the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
+
+What _needs_ to be done is to re-attach the block storage when doing the migration.
+
+At a high-level, the steps for the migration are:
+
+1. Stop the old server.
+2. Unmount the storage volume.
+3. Sync the terrad folders over.
+4. Mount the storage volume to the new server.
+5. Start the new server.
+
+Before following the next steps, it is prudent to reboot the machine and re-run the SSH agent.
+
+```bash
+sudo reboot
+# After rebooting,
+eval `ssh-agent`
+ssh-add ~/.ssh/id_ed25519.pub
+bash sync.sh
+```
+
+### Preparation at the old server
+
+Check that only `terrad` is accessing the mounted folder so that there is no delay in unmounting the drive later.
+
+```bash
+lsof +f -- /mnt/columbus-a
+```
+
+### Actual migration
+
+The sequence of commands below needs to be **executed in quick succession**.
+
+```bash
+# server-a
+sudo systemctl stop terrad
+umount /dev/sda
+
+# Dashboard: Detach volume from Server A and attach to Server B.
+
+# server-b
+bash sync.sh
+# Check that the symbolic link works.
+sudo mount -o nodiscard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus-a && ls -l ~/.terra/
+# Update ownership
+sudo chown -R $TERRA_USER:$TERRA_USER /mnt/columbus-a
+sudo systemctl start terrad
+```
+
+The command to automatically mount the volume needs to be added to /etc/fstab so that the volume is auto-mounted on reboot.
+
+```
+/dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus-a ext4 defaults,nofail,noatime 0 0
+```
+
+## Phase 3
+
+After `terrad` is running as a service, the next service to run is the feeder.
+
+```bash
+sudo systemctl start feeder.service
+journalctl -u feeder.service -f
+```
+
+When the feeder is running smooth for a while, the monitoring script can be started to monitor the oracle feeder's performance.
+
+```bash
+bash oracle-monitor.sh terravaloper1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy9jx24 http://localhost:1317
+```
+
+# Fresh new setup
+
+### Initialize the node
 
 A new node needs to be initialized with a moniker. E.g.
 
@@ -93,8 +285,6 @@ For the Mainnet (columbus-4), the genesis file can be downloaded from https://co
 ~~The address book can be found at https://network.terra.dev/addrbook.json (reference [docs.terra.money](https://docs.terra.money/node/join-network.html#picking-a-network)).~~ The address book is not actually required.
 
 For the Testnet (tequila-0004), the genesis file can be downloaded from https://raw.githubusercontent.com/terra-project/testnet/master/tequila-0004/genesis.json (reference [github.com](https://github.com/terra-project/testnet)).
-
-The address book can be found at https://network.terra.dev/testnet/addrbook.json
 
 For Bombay testnet, the genesis file is at https://raw.githubusercontent.com/terra-project/testnet/master/bombay-0007/genesis.json
 
@@ -114,166 +304,11 @@ Reference: https://discord.com/channels/566086600560214026/566126728578072586/84
 
 Make sure that the data folder points to the actual files by creating a symbolic link to the folder.
 
-    ln -s /mnt/columbus5a/data ~/.terrad/data
+    ln -s /mnt/columbus-a/data ~/.terrad/data
 
 The daemon can now be started to run through the blocks.
 
     terrad start
-
-# For a replacement server
-
-One key consideration when preparing a replacement server is whether the blockchain data is migrated or is a new one created.
-
-## SSH keys
-
-Regardless of whether the data is migrated or is generated from a snapshot, the replacement server (Server B) should be able to access the origin server (Server A) via SSH.
-
-```bash
-# Server B
-vi /etc/hosts # Create a hosts file entry for the origin server.
-ssh-keygen -t ed25519 -C server-b
-ssh-copy-id -i ~/.ssh/id_ed25519.pub -p 22 server-a
-```
-
-Before running either of the options described next, it is prudent to keep the SSH key in memory because the commands need to be executed quickly.
-
-```bash
-eval `ssh-agent`
-ssh-add ~/.ssh/id_ed25519.pub
-```
-
-## Replacement server with new data
-
-Do the same steps for initializing the server. This includes downloading the snapshot file and extracting it.
-
-To do the migration:
-
-1. Stop the old terrad server.
-2. Copy `.terrad/config/priv_validator_key.json` to the new node.
-3. Copy `.terrad/data/priv_validator_state.json` to the new node.
-4. Start the new terrad server.
-
-(Reference: [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
-
-(No need to move .terrad/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
-
-### Commands
-
-~~Sync the client data over:~~
-
-```bash
-rsync server-a:.terracli ~/ -e 'ssh -p 22' -vzrc
-```
-
-Create the following sync script in Server B:
-
-```bash
-#!/bin/bash
-mkdir -p /tmp/staging
-rsync server-a:.terrad/config/priv_validator_key.json /tmp/staging/ -e 'ssh -p 22' -vzr
-mv -i /tmp/staging/priv_validator_key.json ~/.terrad/config/
-# Below is needed for a replacement server with its own data.
-rsync server-a:.terrad/data/priv_validator_state.json /tmp/staging/ -e 'ssh -p 22' -vzrc
-mv -i /tmp/staging/priv_validator_state.json ~/.terrad/data/
-```
-
-## Replacement server with existing data
-
-Prepare the server by making sure that the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
-
-What _needs_ to be done is to re-attach the block storage when doing the migration.
-
-The steps for the migration:
-
-1. Stop the old terrad server.
-2. Unmount the storage volume.
-3. Sync the terrad folders over.
-4. Mount the storage volume to the new server.
-5. Start the new terrad server.
-
-### Commands
-
-Before following the next steps, it is prudent to reboot the machine and re-run the SSH agent.
-
-```bash
-sudo reboot
-# After rebooting,
-eval `ssh-agent`
-ssh-add ~/.ssh/id_ed25519.pub
-bash sync.sh
-```
-
-Create the following sync script (sync.sh) in Server B:
-
-```bash
-#!/bin/bash
-rsync server-a:.terra/config ~/.terra/ -e 'ssh -p 22' --delete --exclude=node_key.json -vzrc
-rsync server-a:oracle-feeder/price-server/config/default.js ~/oracle-feeder/price-server/config/ -e 'ssh -p 22' -vzrc
-rsync server-a:oracle-feeder/feeder/voter.json ~/oracle-feeder/feeder/ -e 'ssh -p 22' -vzrc
-rsync server-a:/etc/systemd/system/price-server.service ~/ -e 'ssh -p 22' -vzrc
-rsync server-a:/etc/systemd/system/feeder.service ~/ -e 'ssh -p 22' -vzrc
-rsync server-a:/etc/systemd/system/terrad.service ~/ -e 'ssh -p 22' -vzrc
-```
-
-The following commands can be run prior to the stopping of the old server.
-
-```bash
-sudo mkdir /mnt/columbus5a
-sudo chown $TERRA_USER:$TERRA_USER -R /mnt/columbus5a
-bash sync.sh
-ln -s /mnt/columbus5a/data ~/.terrad/data
-```
-
-Running the sync script will create three systemd service files in the home directory. They are to be moved to _/etc/systemd/system_ after checking for correctness.
-
-The ownership of the files also need to be set to `root:root`
-
-After doing so, the first service that can be executed with no problems is the price server.
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl start price-server.service
-```
-
-The service can be confirmed to be running by executing `journalctl -u price-server.service -f`
-
-### Actual migration
-
-The sequence of commands below needs to be **executed in quick succession**.
-
-```bash
-# server-a
-sudo systemctl stop terrad
-umount /dev/sda
-# Detach volume from Server A and attach to Server B.
-
-# server-b
-bash sync.sh
-# Check that the symbolic link works.
-sudo mount -o nodiscard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus5a && ls -l ~/.terra/
-# Update ownership
-sudo chown -R $USER:$USER /mnt/columbus5a
-sudo systemctl start terrad
-```
-
-The command to automatically mount the volume needs to be added to /etc/fstab so that the volume is auto-mounted on reboot.
-
-```
-/dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus5a ext4 defaults,nofail,noatime 0 0
-```
-
-After `terrad` is running as a service, the next service to run is the feeder.
-
-```bash
-sudo systemctl start feeder.service
-journalctl -u feeder.service -f
-```
-
-When the feeder is running smooth for a while, the monitoring script can be started to monitor the oracle feeder's performance.
-
-```bash
-bash oracle-monitor.sh terravaloper1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy9jx24 http://localhost:1317
-```
 
 # Client
 
