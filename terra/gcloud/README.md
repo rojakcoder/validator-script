@@ -49,34 +49,68 @@ Note: This will require the Compute API to be turned on. Before it can be turned
 ```bash
 GCP_PROJECT_NAME=terra-col-1 #gcloud config get-value project
 GCP_ZONE=asia-southeast1-b
-GCP_NODE_SETUP=terra-setup-1
-GCP_DISK_SETUP=columbus-a
+GCP_NODE_VAL=validator1-terra
+GCP_DISK_VALIDATOR=columbus-a
 GCP_IAM_EMAIL=$(gcloud iam service-accounts list --format="value(email)")
+MOINT_POINT=/mnt/columbus-a
+GCP_REGION=asia-southeast1
 
-gcloud compute instances create $GCP_NODE_SETUP
+# Create the validator node.
+gcloud compute instances create $GCP_NODE_VAL \
     --project=$GCP_PROJECT_NAME \
-    --zone=us-$GCP_ZONE \
-    --machine-type=e2-micro \
+    --zone=$GCP_ZONE \
+    --machine-type=n2-standard-8 \
     --network-interface=network-tier=PREMIUM,subnet=default \
     --maintenance-policy=MIGRATE \
     --service-account=335875269057-compute@developer.gserviceaccount.com \
     --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
-    --create-disk=auto-delete=yes,boot=yes,device-name=$GCP_NODE_SETUP,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20211212,mode=rw,size=10,type=projects/$GCP_PROJECT_NAME/zones/$GCP_ZONE/diskTypes/pd-balanced \
+    --create-disk=auto-delete=yes,boot=yes,device-name=$GCP_NODE_VAL,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20211212,mode=rw,size=10,type=projects/$GCP_PROJECT_NAME/zones/$GCP_ZONE/diskTypes/pd-balanced \
     --no-shielded-secure-boot \
     --shielded-vtpm \
     --shielded-integrity-monitoring \
     --reservation-affinity=any
 
-gcloud compute disks create $GCP_DISK_SETUP \
-    --size=200GB
-    --type=pd-ssd
-    --project=$GCP_PROJECT_NAME
+#### Setting up the base node
+gcloud compute disks create $GCP_DISK_VALIDATOR \
+    --size=400GB \
+    --type=pd-ssd \
+    --project=$GCP_PROJECT_NAME \
     --zone=$GCP_ZONE
 
-gcloud compute instances attach-disk $GCP_NODE_SETUP --disk $GCP_DISK_SETUP
+gcloud compute instances attach-disk $GCP_NODE_VAL --disk $GCP_DISK_VALIDATOR --zone=$GCP_ZONE
+
+# gcloud beta compute disks create columbus-b --project=terra-col-1 --type=pd-ssd --size=800GB --zone=us-west1-b
+
+sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,nodiscard /dev/sdb
+sudo mkdir $MOUNT_POINT
+sudo mount -o discard,defaults /dev/sdb $MOUNT_POINT
 ```
 
-##### Prerequisites
+### ~~Reconfiguring disks~~
+
+~~First check that there are no processes accessing the filesystem.~~
+
+```bash
+fuser -v $MOUNT_POINT
+```
+
+```bash
+sudo umount $MOUNT_POINT
+```
+
+```bash
+gcloud compute disks resize $GCP_DISK_VALIDATOR --size 500GB --zone $GCP_ZONE
+```
+
+~~Reference: https://cloud.google.com/compute/docs/disks/detach-reattach-boot-disk~~
+
+### Resizing disks
+
+Disks can be resized **without** unmounting them.
+
+Reference: https://cloud.google.com/compute/docs/disks/working-with-persistent-disks#resize_pd
+
+### Prerequisites
 
 **The service may need to be first enabled in the Google Admin Console.**
 
@@ -87,6 +121,28 @@ Turn on _Allow users to create GCP projects_
 **Billing may also need to be enabled.**
 
 From the dashboard, go to _Billing_ from the side menu. A prompt appears to "link a billing account".
+
+# Monitoring
+
+## Agent installation
+
+```bash
+curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+sudo bash add-google-cloud-ops-agent-repo.sh --also-install
+```
+
+Reference: https://cloud.google.com/stackdriver/docs/solutions/agents/ops-agent/installation
+
+#### LEGACY
+
+THIS IS REPLACED WITH OPS AGENT.
+
+```bash
+curl -sSO https://dl.google.com/cloudagents/add-monitoring-agent-repo.sh
+sudo bash add-monitoring-agent-repo.sh --also-install
+```
+
+Reference: https://cloud.google.com/monitoring/agent/monitoring/installation#agent-version-debian-ubuntu
 
 # Notes
 

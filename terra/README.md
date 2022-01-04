@@ -78,7 +78,7 @@ Create the following sync script (sync.sh) in Server B:
 
 ```bash
 #!/bin/bash
-rsync $SERVER_A:.terra/config/ ~/.terra/config/ -e 'ssh -p $SSH_PORT' --delete --include-from=~/validator-script/terra/includes.txt -vzrc
+rsync $SERVER_A:.terra/config/ ~/.terra/config/ -e 'ssh -p '$SSH_PORT --delete --include-from=$HOME/validator-script/terra/includes.txt -vzrc
 # Validator key is not synchronized here as it might be for a new server.
 rsync $SERVER_A:oracle-feeder/price-server/config/default.js ~/oracle-feeder/price-server/config/ -e 'ssh -p $SSH_PORT' -vzrc
 rsync $SERVER_A:oracle-feeder/feeder/voter.json ~/oracle-feeder/feeder/ -e 'ssh -p $SSH_PORT' -vzrc
