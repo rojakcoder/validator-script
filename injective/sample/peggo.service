@@ -1,0 +1,13 @@
+[Unit]
+  Description=peggo
+
+[Service]
+  Type=simple
+  User=$USER
+  WorkingDirectory=/home/$USER/.peggo
+  ExecStart=/bin/bash -c 'peggo orchestrator '
+  Restart=always
+  RestartSec=1
+
+[Install]
+  WantedBy=multi-user.target
