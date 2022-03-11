@@ -1,0 +1,13 @@
+diff --git a/feeder/package.json b/feeder/package.json
+index 93a428f..4e72a60 100644
+--- a/feeder/package.json
++++ b/feeder/package.json
+@@ -5,6 +5,8 @@
+   "license": "Apache-2.0",
+   "scripts": {
+     "start": "ts-node src/index.ts",
++    "build": "tsc",
++    "startjs": "node dist/src/index.js",
+     "lint": "eslint 'src/**/*.{js,ts,tsx}' --fix"
+   },
+   "dependencies": {

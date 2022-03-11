@@ -43,6 +43,20 @@ After the script has completed running and the applications are downloaded, be s
 
 > /home/$TERRA_USER/oracle-feeder/price-server/config/default.js
 
+### Performance improvement
+
+As it is, running the feeder on `ts-node` consumes over 100 MB of memory. Use the patch file _sample/feeder.patch_ to transpile the TS code into JS.
+
+```bash
+cd ~/oracle-feeder/feeder
+git apply ~/Downloads/validator-script/terra/sample/feeder.patch
+npm run build
+```
+
+Then copy _sample/feeder-startjs.sh_ into the _feeder_ directory.
+
+Modify _/etc/systemd/system/feeder.service_ to change `feeder-start.sh` to `feeder-startjs.sh`.
+
 # Migration
 
 To migrate the validator, the main consideration is whether the blockchain data is available or not. In other words, whether the blockchain data is available on an external storage volume or does it need to be rebuilt. The latter scenario typically happens when moving to a different provider.

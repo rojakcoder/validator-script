@@ -1,3 +1,14 @@
+## Monitoring
+
+### glances
+
+`glances` is a tool to help with monitoring resource consumption.
+
+```bash
+sudo apt-get install python3-pip
+pip install --user glances
+```
+
 ## Logging
 
 ### Gets the log output of a service.
