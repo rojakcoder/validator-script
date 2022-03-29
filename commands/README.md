@@ -11,17 +11,25 @@ pip install --user glances
 
 ## Logging
 
-### Gets the log output of a service.
+### Gets the log output of a service ###
 
 `journalctl -u price-server.service -f`
 
 Note that if the service is running at a "system" level, there may be a need to use `sudo` with the command.
 
-### Lists the logs since a specific time.
+### List the logs since a specific time ###
 
 `journalctl -u feeder.service --since "2021-12-09 20:00:00"`
 
 `journalctl -S "4 hour ago"`
+
+### List the logs until a specific time ###
+
+`journalctl --until "2022-02-24 01:23:00`
+
+### List the logs only from the current boot ###
+
+`journalctl -u service-name.service -b`
 
 ## Service Management
 
