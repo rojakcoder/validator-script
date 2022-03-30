@@ -55,7 +55,7 @@ npm run build
 
 Then copy _sample/feeder-startjs.sh_ into the _feeder_ directory.
 
-Modify _/etc/systemd/system/feeder.service_ to change `feeder-start.sh` to `feeder-startjs.sh`.
+Modify _/etc/systemd/system/feeder.service_ to change `feeder-start.sh` to `feeder-startjs.sh` and reload the daemon.
 
 # Migration
 
