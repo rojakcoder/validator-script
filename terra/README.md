@@ -65,7 +65,7 @@ Regardless of the scenarios, the steps described in Phase 1 and Phase 3 should b
 
 ## Phase 1
 
-## SSH keys
+### SSH keys ###
 
 Regardless of whether the data is migrated or is generated from a snapshot, the replacement server (Server B) should be able to access the origin server (Server A) via SSH.
 
@@ -86,7 +86,7 @@ eval `ssh-agent`
 ssh-add ~/.ssh/id_ed25519.pub
 ```
 
-## Sync script
+### Sync script ###
 
 Create the following sync script (sync.sh) in Server B:
 
@@ -127,6 +127,7 @@ After doing so, the first service that can be started on server-b with no depend
 
 ```bash
 sudo systemctl daemon-reload
+sudo systemctl enable price-server.service
 sudo systemctl start price-server.service
 ```
 
@@ -136,11 +137,11 @@ The service can be confirmed to be running by executing
 journalctl -u price-server.service -f
 ```
 
-## Phase 2A: Migration with no pre-existing blockchain data
+## Phase 2A: Migration with no pre-existing blockchain data ##
 
 For a new server, a snapshot of the blockchain needs to be downloaded for quick sync.
 
-### Download a snapshot
+### Download a snapshot ###
 
 DO THIS FIRST AS THIS CAN TAKE A LONG TIME.
 
@@ -190,7 +191,7 @@ Once it is caught up:
 
 (Reference: https://discord.com/channels/566086600560214026/566126867686621185/806929605629968396)
 
-### Actual migration
+### Actual migration ###
 
 The sequence of commands below needs to be **excuted in quick succession**.
 
@@ -207,7 +208,7 @@ rsync $SERVER_A:.terra/data/priv_validator_state.json ~/.terra/data/ -e 'ssh -p 
 sudo systemctl start terrad
 ```
 
-## Phase 2B: Migration with blockchain data available
+## Phase 2B: Migration with blockchain data available ##
 
 Prepare the server by making sure that the software components are in place. There is no need to download the blockchain snapshot since the data is already available for migration.
 
@@ -270,6 +271,7 @@ The command to automatically mount the volume needs to be added to /etc/fstab so
 After `terrad` is running as a service, the next service to run is the feeder.
 
 ```bash
+sudo systemctl enable feeder.service
 sudo systemctl start feeder.service
 journalctl -u feeder.service -f
 ```

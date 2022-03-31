@@ -27,31 +27,33 @@ echo "====================="
 mkdir -p $HOME/Downloads
 
 # Installation of Go
-VERSION_GO=1.17.5
+read -p "Please enter the version of Go to install (e.g. 1.17.8): " version_go
 echo "Installing Go"
 echo "-------------"
 cd $HOME/Downloads
-wget https://golang.org/dl/go${VERSION_GO}.linux-amd64.tar.gz
-sudo tar -C /usr/local -zxvf go${VERSION_GO}.linux-amd64.tar.gz
+wget https://golang.org/dl/go${version_go}.linux-amd64.tar.gz
+sudo tar -C /usr/local -zxvf go${version_go}.linux-amd64.tar.gz
 source ~/.profile
 echo -n "Installed "
 go version
 
 # Installation of terrad
-VERSION_CORE=v0.5.12-oracle
+read -p "Please enter the version of Terra core to install (e.g. v0.5.17): " version_core
 echo "Installing terrad"
 echo "-----------------"
 mkdir -p $HOME/go
 cd $HOME/Downloads
-git clone https://github.com/terra-project/core
+git clone https://github.com/terra-money/core
 cd $HOME/Downloads/core
-git checkout ${VERSION_CORE}
+git checkout ${version_core}
 make install
 echo -n "Installed terrad "
 terrad version
 
 cd $HOME/Downloads
-echo -n "Adding autocompletion for terrad & terracli commands..."
+echo "Press enter to proceed with enabling autocompletion for terrad commands."
+read
+echo -n "Adding autocompletion for terrad commands..."
 # Add autocompletion.
 terrad completion > terrad_completion
 cat terrad_completion >> ~/.bash_aliases
@@ -59,13 +61,13 @@ source ~/.profile
 echo "  done."
 
 # Install the Price Server
-VERSION_NODE=v16.13.1
+read -p "Please enter the version of Node.js to install (e.g. v16.14.2): " version_node
 echo "Downloading Node.js"
 echo "-------------------"
 cd $HOME/Downloads
-wget https://nodejs.org/dist/${VERSION_NODE}/node-${VERSION_NODE}-linux-x64.tar.xz
-tar -xvf node-${VERSION_NODE}-linux-x64.tar.xz
-cd node-${VERSION_NODE}-linux-x64/
+wget https://nodejs.org/dist/${version_node}/node-${version_node}-linux-x64.tar.xz
+tar -xvf node-${version_node}-linux-x64.tar.xz
+cd node-${version_node}-linux-x64/
 sudo mv -i bin/* /usr/local/bin/
 rmdir bin
 sudo mv -i include/node /usr/local/include/
@@ -81,7 +83,7 @@ rm CHANGELOG.md
 rm LICENSE
 rm README.md
 cd ..
-rmdir node-${VERSION_NODE}-linux-x64
+rmdir node-${version_node}-linux-x64
 
 # Install the Oracle Feeder and Price Server
 echo "Downloading Oracle Feeder"
@@ -89,10 +91,9 @@ echo "-------------------------"
 cd $HOME
 git clone https://github.com/terra-project/oracle-feeder.git
 
-# VERSION_FEEDER=v2.0.0
-# echo "Switching to version $VERSION_FEEDER"
-# cd $HOME/oracle-feeder
-# git checkout $VERSION_FEEDER
+read -p "Please enter the version of Oracle Feeder/Price Server to install (e.g. v2.0.2): " version_feeder
+cd $HOME/oracle-feeder
+git checkout $version_feeder
 
 echo "- Installing Feeder."
 cd $HOME/oracle-feeder/feeder
