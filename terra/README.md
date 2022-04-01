@@ -49,7 +49,7 @@ As it is, running the feeder on `ts-node` consumes over 100 MB of memory. Use th
 
 ```bash
 cd ~/oracle-feeder/feeder
-git apply ~/Downloads/validator-script/terra/sample/feeder.patch
+patch package.json ~/validator-script/terra/sample/feeder.patch
 npm run build
 ```
 
@@ -191,6 +191,8 @@ Once it is caught up:
 
 (Reference: https://discord.com/channels/566086600560214026/566126867686621185/806929605629968396)
 
+Use the file _sample/migrate.sh_ to copy the file from the old server to the new server **after stopping both servers**.
+
 ### Actual migration ###
 
 The sequence of commands below needs to be **excuted in quick succession**.
@@ -280,6 +282,48 @@ When the feeder is running smooth for a while, the monitoring script can be star
 
 ```bash
 bash oracle-monitor.sh terravaloper1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy9jx24 http://localhost:1317
+```
+# Tips #
+
+## Continuous TRIM ##
+
+One performance tip for SSD storage technologies is the removal of continuous [TRIM](https://www.digitalocean.com/community/tutorials/how-to-configure-periodic-trim-for-ssd-storage-on-linux-servers).
+
+Drives that have continuous TRIM enabled are mounted with the `discard` option. They can be found by running:
+
+`findmnt -O discard`
+
+_If_ there are drives that have this option, they can be remounted in place with the `-o` option:
+
+`sudo mount -o remount,nodiscard /mnt/col`
+
+In the _/etc/fstab_ file, the `discard` property needs to be removed so that when the drives get mounted on boot, continuous TRIM will not be enabled.
+
+## Periodic TRIM ##
+
+If continuous TRIM is disabled, periodic TRIM needs to be performed.
+
+Create the cron script _/etc/cron.weekly/fstrim_:
+
+```
+#!/bin/sh
+/usr/sbin/fstrim --all || true
+```
+
+Then make the script executable:
+
+```bash
+sudo chmod a+x /etc/cron.weekly/fstrim
+```
+
+## Hostname ##
+
+Some distributions may not set the hostname to match the name set in the dashboard.
+
+The name can be permanently changed using `hostnamectl`:
+
+```bash
+sudo hostnamectl set-hostname validator-terra
 ```
 
 # Fresh new setup
