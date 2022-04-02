@@ -70,7 +70,23 @@ gcloud compute instances create $GCP_NODE_VAL \
     --shielded-integrity-monitoring \
     --reservation-affinity=any
 
-#### Setting up the base node
+# Validator node 2
+INSTANCE_NAME_1=validator2-terra
+GCP_ZONE_1=us-east1-b
+gcloud compute instances create $INSTANCE_NAME_1 \
+    --project=$GCP_PROJECT_NAME \
+    --zone=$GCP_ZONE_1 \
+    --machine-type=e2-highmem-4 \
+    --network-interface=network-tier=PREMIUM,subnet=default --maintenance-policy=MIGRATE \
+    --service-account=335875269057-compute@developer.gserviceaccount.com \
+    --scopes=https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring.write,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append \
+    --create-disk=auto-delete=yes,boot=yes,device-name=$INSTANCE_NAME_1,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220331,mode=rw,size=10,type=projects/$GCP_PROJECT_NAME/zones/$GCP_ZONE_1/diskTypes/pd-balanced \
+    --no-shielded-secure-boot \
+    --shielded-vtpm \
+    --shielded-integrity-monitoring \
+    --reservation-affinity=any
+
+# Creates the external volume.
 gcloud compute disks create $GCP_DISK_VALIDATOR \
     --size=400GB \
     --type=pd-ssd \
@@ -79,12 +95,31 @@ gcloud compute disks create $GCP_DISK_VALIDATOR \
 
 gcloud compute instances attach-disk $GCP_NODE_VAL --disk $GCP_DISK_VALIDATOR --zone=$GCP_ZONE
 
-# gcloud beta compute disks create columbus-b --project=terra-col-1 --type=pd-ssd --size=800GB --zone=us-west1-b
+# Creates the external volume for validator node 2.
+GCP_DISK_VALIDATOR_1=col5b
+gcloud compute disks create $GCP_DISK_VALIDATOR_1 \
+    --project=$GCP_PROJECT_NAME \
+    --type=pd-ssd \
+    --size=900GB \
+    --zone=$GCP_ZONE_1
+gcloud compute instances attach-disk $INSTANCE_NAME_1 --disk $GCP_DISK_VALIDATOR_1 --zone=$GCP_ZONE_1
 
 sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,nodiscard /dev/sdb
 sudo mkdir $MOUNT_POINT
-sudo mount -o discard,defaults /dev/sdb $MOUNT_POINT
+sudo mount -o nodiscard,defaults /dev/sdb $MOUNT_POINT
 ```
+
+Reference: https://cloud.google.com/compute/docs/disks/add-persistent-disk?&_ga=2.261534606.-2010853228.1625020273#formatting
+
+# Auto remount the volume.
+
+Since the device name can change with each reboot, the more reliable method to remount the volume is to use the UUID. The UUID of the device can be retrieved like so:
+
+`sudo blkid /dev/sdb`
+
+After getting the device UUID, add the following entry to _/etc/fstab_ file:
+
+`UUID=<uuid> /mnt/col5 ext4 defaults,nofail,noatime 0 2`
 
 ### ~~Reconfiguring disks~~
 

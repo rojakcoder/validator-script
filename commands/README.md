@@ -67,7 +67,3 @@ sudo systemctl enable cosmos.service
 ### Check disk performance
 
 `sudo hdparm -tT /dev/disk/by-id/scsi-0DO_Volume_columbus5a`
-
-### Disk interaction
-
-`sudo blkid /dev/sdb`
