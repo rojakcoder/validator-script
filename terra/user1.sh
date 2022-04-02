@@ -2,14 +2,14 @@
 
 ## Update the repos.
 read -p "Perform system update? (y|N) " update_system
-if [[ update_system = "y" ]]; then
+if [[ $update_system = "y" ]]; then
   echo "Updating the system"
   echo "==================="
   sudo apt-get update && sudo apt-get upgrade -y
 fi
 
 read -p "Install build tools? (y|N) " install_tools
-if [[ install_tools ]]; then
+if [[ $install_tools = "y" ]]; then
   # Installation of build tools.
   echo "Installing build tools"
   echo "======================"
@@ -21,7 +21,7 @@ fi
 GOPATH=$HOME/go
 GOROOT=/usr/local/go
 read -p "Update environment variables? (y|N) " update_env
-if [[ update_env = "y" ]]; then
+if [[ $update_env = "y" ]]; then
   echo "Configuration"
   echo "============="
   echo -n "> Updating bash profile..."

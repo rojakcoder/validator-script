@@ -1,1 +1,3 @@
 priv_validator_key.json
+node_key.json
+write-file-*

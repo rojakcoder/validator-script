@@ -34,7 +34,7 @@ else
 fi
 
 if [[ -f ~/"$STATE_FILE" ]]; then
-  state=`md5sum "~/$STATE_FILE"`
+  state=`md5sum ~/"$STATE_FILE"`
   echo "State: $state"
 else
   echo "~/$STATE_FILE does not exist."
