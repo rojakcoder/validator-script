@@ -89,17 +89,7 @@ ssh-add ~/.ssh/id_ed25519.pub
 ### Sync script ###
 
 Create the following sync script (sync.sh) in Server B:
-
-```bash
-#!/bin/bash
-rsync $SERVER_A:.terra/config/ ~/.terra/config/ -e 'ssh -p $SSH_PORT' --delete --exclude-from=$HOME/validator-script/terra/excludes.txt -vzrc
-# Validator key is not synchronized here as it might be for a new server.
-rsync $SERVER_A:oracle-feeder/price-server/config/default.js ~/oracle-feeder/price-server/config/ -e 'ssh -p $SSH_PORT' -vzrc
-rsync $SERVER_A:oracle-feeder/feeder/voter.json ~/oracle-feeder/feeder/ -e 'ssh -p $SSH_PORT' -vzrc
-rsync $SERVER_A:/etc/systemd/system/price-server.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
-rsync $SERVER_A:/etc/systemd/system/feeder.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
-rsync $SERVER_A:/etc/systemd/system/terrad.service ~/ -e 'ssh -p $SSH_PORT' -vzrc
-```
+Use the script _sample/sync.sh_ in Server B to get the files over for the initial sync.
 
 (No need to move .terra/config/node_key.json - [https://discord.com/channels/566086600560214026/566126867686621185/842673595117207573])
 
@@ -179,6 +169,14 @@ lz4 -d {SNAPSHOT_FILE} | tar xf - -C /mnt/columbus-a
 
 This command extracts the files into /mnt/columbus-a/data (assuming /mnt/columbus-a is a separate storage disk). This can also take a long while (hours) to complete depending on the size and the speed of the disk.
 
+Make sure to create a symbolic link to the data directory in the home folder.
+
+```bash
+cd ~/.terra
+rmdir data
+ln -s /mnt/col5/data
+```
+
 Once the extraction is complete, run `sudo systemctl start terrad` and wait for it to catch up.
 
 Once it is caught up:
@@ -203,10 +201,8 @@ sudo systemctl stop terrad
 # 2. server-b
 sudo systemctl stop terrad
 # 3. server-b
-rsync $SERVER_A:.terra/config/priv_validator_key.json ~/.terra/config/ -e 'ssh -p $SSH_PORT' -vzc
+bash $HOME/validator-script/terra/sample/migrate.sh -t
 # 4. server-b
-rsync $SERVER_A:.terra/data/priv_validator_state.json ~/.terra/data/ -e 'ssh -p $SSH_PORT' -vzc
-# 5. server-b
 sudo systemctl start terrad
 ```
 
@@ -283,6 +279,7 @@ When the feeder is running smooth for a while, the monitoring script can be star
 ```bash
 bash oracle-monitor.sh terravaloper1rjmzlljxwu2qh6g2sm9uldmtg0kj4qgyy9jx24 http://localhost:1317
 ```
+
 # Tips #
 
 ## Continuous TRIM ##

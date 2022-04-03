@@ -8,6 +8,7 @@
 
 HOST=
 USER=
+SSH_PORT=22
 
 KEY_FILE=.terra/config/priv_validator_key.json
 STATE_FILE=.terra/data/priv_validator_state.json
@@ -19,13 +20,13 @@ do
     mkdir -p ~/backup
     mv -i ~/"$KEY_FILE" ~/backup/
     mv -i ~/"$STATE_FILE" ~/backup/
-    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/ -e 'ssh -p 9560' -vzrc
-    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/ -e 'ssh -p 9560' -vzrc
+    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/ -e "ssh -p $SSH_PORT" -vzrc
+    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/ -e "ssh -p $SSH_PORT" -vzrc
   else
     echo "Copying ~/"$KEY_FILE" to ~/backup"
     echo "Copying ~/"$STATE_FILE" to ~/backup"
-    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/  -e 'ssh -p 9560' -vzrcn
-    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/  -e 'ssh -p 9560' -vzrcn
+    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/  -e "ssh -p $SSH_PORT" -vzrcn
+    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/  -e "ssh -p $SSH_PORT" -vzrcn
   fi
 done
 
