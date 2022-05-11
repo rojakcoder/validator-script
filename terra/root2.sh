@@ -35,7 +35,7 @@ echo -n "> Changing default SSH port, password login, and root configurations...
 
 sed -i'.bak1' -e 's/^PasswordAuthentication /#PasswordAuthentication /' /etc/ssh/sshd_config
 sed -i'.bak2' -e 's/^PermitRootLogin /#PermitRootLogin /' /etc/ssh/sshd_config
-echo "Port 9560" >> /etc/ssh/sshd_config
+echo "Port 9876" >> /etc/ssh/sshd_config
 echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
 echo "PermitRootLogin no" >> /etc/ssh/sshd_config
 systemctl restart sshd

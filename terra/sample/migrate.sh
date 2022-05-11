@@ -19,14 +19,16 @@ do
   then
     mkdir -p ~/backup
     mv -i ~/"$KEY_FILE" ~/backup/
+    echo "Moved ~/"$KEY_FILE" to ~/backup"
     mv -i ~/"$STATE_FILE" ~/backup/
+    echo "Moved ~/"$STATE_FILE" to ~/backup"
     rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/ -e "ssh -p $SSH_PORT" -vzrc
     rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/ -e "ssh -p $SSH_PORT" -vzrc
   else
-    echo "Copying ~/"$KEY_FILE" to ~/backup"
-    echo "Copying ~/"$STATE_FILE" to ~/backup"
-    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/  -e "ssh -p $SSH_PORT" -vzrcn
-    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/  -e "ssh -p $SSH_PORT" -vzrcn
+    echo "Moving ~/"$KEY_FILE" to ~/backup"
+    echo "Moving ~/"$STATE_FILE" to ~/backup"
+    rsync $USER@$HOST:"$KEY_FILE" ~/.terra/config/ -e "ssh -p $SSH_PORT" -vzrcn
+    rsync $USER@$HOST:"$STATE_FILE" ~/.terra/data/ -e "ssh -p $SSH_PORT" -vzrcn
   fi
 done
 

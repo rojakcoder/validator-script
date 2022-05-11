@@ -1,5 +1,0 @@
-addrbook.json
-app.toml
-client.toml
-config.toml
-genesis.json

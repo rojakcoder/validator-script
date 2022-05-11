@@ -2,7 +2,7 @@
 
 if [[ -z "${TERRA_USER}" ]]; then
   echo "ERROR: Environment variable 'TERRA_USER' must be defined first. E.g."
-  echo "    export TERRA_USER=terrau"
+  echo "    export TERRA_USER=terra"
   exit
 fi
 

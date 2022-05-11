@@ -55,7 +55,7 @@ Note: This will require the Compute API to be turned on. Before it can be turned
 ```bash
 GCP_PROJECT_NAME=terra-col-1 #gcloud config get-value project
 GCP_ZONE=asia-southeast1-b
-GCP_NODE_VAL=validator1-terra
+GCP_NODE_VAL=terra-validator
 GCP_DISK_VALIDATOR=columbus-a
 GCP_IAM_EMAIL=$(gcloud iam service-accounts list --format="value(email)")
 MOINT_POINT=/mnt/columbus-a
