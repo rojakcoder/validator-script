@@ -47,11 +47,11 @@ As it is, running the feeder on `ts-node` consumes over 100 MB of memory. Use th
 
 ```bash
 cd ~/oracle-feeder/feeder
-patch package.json ~/validator-script/terra/sample/feeder.patch
+patch package.json ~/validator-script/terra/scripts/feeder.patch
 npm run build
 ```
 
-Then copy _sample/feeder-startjs.sh_ into the _feeder_ directory.
+Then copy _~/validator-script/terra/scripts/feeder-startjs.sh_ into the _feeder_ directory.
 
 Modify _/etc/systemd/system/feeder.service_ to change `feeder-start.sh` to `feeder-startjs.sh` and reload the daemon.
 
@@ -114,8 +114,8 @@ After doing so, the first service that can be started on server-b with no depend
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable price-server.service
-sudo systemctl start price-server.service
+# Enable the service and start it immediately.
+sudo systemctl enable price-server.service --now
 ```
 
 The service can be confirmed to be running by executing
@@ -245,13 +245,16 @@ sudo systemctl stop terrad
 umount /dev/sda
 
 # Dashboard: Detach volume from Server A and attach to Server B.
+# The exact instructions depend on the service provider.
 
 # server-b
 bash sync.sh
 # Check that the symbolic link works.
 sudo mount -o nodiscard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_columbus5a /mnt/columbus-a && ls -l ~/.terra/
-# Update ownership
+# Update ownership if necessary.
 sudo chown -R $TERRA_USER:$TERRA_USER /mnt/columbus-a
+# Modify the migrate script to exclude the state JSON file and run it to get the key file.
+bash $HOME/validator-script/terra/sample/migrate.sh -t
 sudo systemctl start terrad
 ```
 

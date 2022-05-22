@@ -2,7 +2,7 @@
 
 # TERRA #
 USER_TERRA=terrau
-SERVER_TERRA=validator3-terra.us-east1-b.terra-col-1
+SERVER_TERRA=terra-validator
 SSH_PORT=22
 
 BU_TERRA_FOLDER=./backup/terra-validator4/
