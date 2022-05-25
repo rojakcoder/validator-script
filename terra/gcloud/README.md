@@ -135,12 +135,12 @@ gcloud compute disks create $GCP_DISK3 \
     --zone=$GCP_ZONE_1
 gcloud compute instances attach-disk $INSTANCE3 --disk $GCP_DISK3 --zone $GCP_ZONE_1
 
-sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,nodiscard /dev/sdb
+sudo mkfs.ext4 -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard /dev/sdb
 sudo mkdir $MOUNT_POINT
 sudo mount -o nodiscard,defaults /dev/sdb $MOUNT_POINT
 ```
 
-Reference: https://cloud.google.com/compute/docs/disks/add-persistent-disk?&_ga=2.261534606.-2010853228.1625020273#formatting
+Reference: https://cloud.google.com/compute/docs/disks/add-persistent-disk#formatting
 
 Note: To determine if a disk has been mounted with `discard` option, use the command `findmnt -O discard` (Reference: https://www.digitalocean.com/community/tutorials/how-to-configure-periodic-trim-for-ssd-storage-on-linux-servers)
 
